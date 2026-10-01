@@ -4,7 +4,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.core.config import load_secret_from_gcp
 from app.services.gemini_service import explain_document_image
 from app.services.maps_service import find_nearby_centres
 from app.services.session_service import (
@@ -94,12 +93,21 @@ async def test_local_session_fallback_is_bounded() -> None:
 
 def test_firestore_client_configuration_and_failure() -> None:
     """Verify production Firestore initialization is mocked and degrades safely."""
-    settings = MagicMock(app_env="production", gcp_project_id="test", firestore_database="default")
+    import app.services.session_service as ss
+
+    ss._CACHED_FIRESTORE_CLIENT = None
+    settings = MagicMock(
+        environment="production", google_cloud_project="test", firestore_database="default"
+    )
     with patch("app.services.session_service.get_settings", return_value=settings):
         with patch("google.cloud.firestore.Client") as client_class:
             client_class.return_value = MagicMock()
-            assert _get_firestore_client() is client_class.return_value
-            client_class.side_effect = RuntimeError
+            result = _get_firestore_client()
+            assert result is client_class.return_value
+    # Reset and test failure path
+    ss._CACHED_FIRESTORE_CLIENT = None
+    with patch("app.services.session_service.get_settings", return_value=settings):
+        with patch("google.cloud.firestore.Client", side_effect=RuntimeError):
             assert _get_firestore_client() is None
 
 
@@ -163,10 +171,12 @@ async def test_gemini_document_summary_mock() -> None:
     mock_response = MagicMock()
     mock_response.text = "इस पत्र में आवेदन की तारीख दी गई है।"
 
-    with patch("app.services.gemini_service.get_settings") as mock_settings:
-        mock_settings.return_value.gemini_api_key = "test"
-        mock_settings.return_value.gemini_model = "gemini-2.5-flash"
-
+    settings = MagicMock(
+        gemini_model="gemini-2.5-flash",
+        google_cloud_project="test-project",
+        google_cloud_location="us-central1",
+    )
+    with patch("app.services.gemini_service.get_settings", return_value=settings):
         with patch("google.genai.Client") as mock_client_cls:
             mock_client = MagicMock()
             mock_client.models.generate_content.return_value = mock_response
@@ -181,30 +191,38 @@ async def test_gemini_document_summary_mock() -> None:
 
 
 @pytest.mark.asyncio
-async def test_gemini_missing_key_and_timeout_use_local_guidance() -> None:
-    """Verify Gemini is skipped without credentials and falls back on failures."""
-    with patch("app.services.gemini_service.get_settings") as settings:
-        settings.return_value.gemini_api_key = ""
-        without_key = await explain_document_image(b"image", "image/jpeg")
-        assert "फोटो" in without_key.summary_hi
+async def test_gemini_missing_project_and_timeout_use_local_guidance() -> None:
+    """Verify Gemini is skipped without project and falls back on failures."""
+    no_project = MagicMock(google_cloud_project="", google_cloud_location="us-central1")
+    with patch("app.services.gemini_service.get_settings", return_value=no_project):
+        without_project = await explain_document_image(b"image", "image/jpeg")
+    assert "पढ़ी" in without_project.summary_hi or "फोटो" in without_project.summary_hi
 
-        settings.return_value.gemini_api_key = "test"
-        settings.return_value.gemini_model = "gemini-2.5-flash"
+    with_project = MagicMock(
+        gemini_model="gemini-2.5-flash",
+        google_cloud_project="test-project",
+        google_cloud_location="us-central1",
+    )
+    with patch("app.services.gemini_service.get_settings", return_value=with_project):
         with patch("google.genai.Client") as client_class:
             client_class.return_value.models.generate_content.side_effect = TimeoutError
             timed_out = await explain_document_image(b"image", "image/jpeg")
-    assert timed_out == without_key
+    assert timed_out == without_project
 
 
 @pytest.mark.asyncio
 async def test_gemini_empty_response_uses_local_guidance() -> None:
     """Verify empty model output does not produce a blank document explanation."""
-    settings = MagicMock(gemini_api_key="test", gemini_model="gemini-2.5-flash")
+    settings = MagicMock(
+        gemini_model="gemini-2.5-flash",
+        google_cloud_project="test-project",
+        google_cloud_location="us-central1",
+    )
     with patch("app.services.gemini_service.get_settings", return_value=settings):
         with patch("google.genai.Client") as client_class:
             client_class.return_value.models.generate_content.return_value = MagicMock(text=" ")
             response = await explain_document_image(b"image", "image/jpeg")
-    assert "फोटो" in response.summary_hi
+    assert "पढ़ी" in response.summary_hi or "फोटो" in response.summary_hi
 
 
 @pytest.mark.asyncio
@@ -269,17 +287,6 @@ async def test_tts_service_mock_client() -> None:
         audio = await synthesize_speech("नया परीक्षण वाक्य 123", voice_name="hi-IN-Neural2-A")
         assert audio == b"\xff\xfb\x90fake-synthesized-audio"
         assert mock_tts.synthesize_speech.call_args.kwargs["timeout"] == 5.0
-
-
-def test_secret_manager_cloud_api_mock() -> None:
-    """Test Secret Manager access uses a request deadline and returns its payload."""
-    with patch("google.cloud.secretmanager.SecretManagerServiceClient") as client_class:
-        client = MagicMock()
-        client.access_secret_version.return_value.payload.data = b"test-value"
-        client_class.return_value = client
-
-        assert load_secret_from_gcp("TEST_SECRET", "test") == "test-value"
-        assert client.access_secret_version.call_args.kwargs["timeout"] == 5.0
 
 
 @pytest.mark.asyncio

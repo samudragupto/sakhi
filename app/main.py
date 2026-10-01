@@ -28,6 +28,9 @@ from app.routes.voice import router as voice_router
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Lifespan context manager for startup and shutdown events."""
+    from app.services.gemini_service import get_gemini_client
+
+    get_gemini_client()
     logger.info(
         "Application starting up",
         extra={"event": "startup"},
@@ -78,13 +81,28 @@ def _add_routers(app: FastAPI) -> None:
     app.include_router(vision_router)
 
 
+BASE_DIR = Path(__file__).resolve().parent
+
+
 def _mount_assets(app: FastAPI) -> None:
-    """Mount frontend assets and locale files."""
-    static_dir = Path(__file__).resolve().parent / "static"
+    """Mount frontend assets and locale files if they exist; warn otherwise."""
+    static_dir = BASE_DIR / "static"
     if static_dir.exists():
         app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
-    locale_dir = Path(__file__).resolve().parent / "data" / "locales"
-    app.mount("/locales", StaticFiles(directory=str(locale_dir)), name="locales")
+    else:
+        logger.warning(
+            "Static directory missing; frontend static files not mounted",
+            extra={"event": "missing_static_dir"},
+        )
+
+    locale_dir = BASE_DIR / "data" / "locales"
+    if locale_dir.exists():
+        app.mount("/locales", StaticFiles(directory=str(locale_dir)), name="locales")
+    else:
+        logger.warning(
+            "Locale directory missing; /locales endpoint not mounted",
+            extra={"event": "missing_locale_dir"},
+        )
 
 
 def create_app() -> FastAPI:

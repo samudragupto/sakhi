@@ -12,8 +12,8 @@ dependencies = [
     "google-genai==2.26.0",
     "google-cloud-speech==2.40.0",
     "google-cloud-texttospeech==2.37.0",
+    "google-cloud-translate==3.23.0",
     "google-cloud-firestore==2.33.0",
-    "google-cloud-secret-manager==2.30.0",
     "httpx==0.28.1",
     "slowapi==0.1.10",
     "qrcode[pil]==8.2",
@@ -29,7 +29,15 @@ dev = [
     "ruff==0.16.9",
     "mypy==2.3.1",
     "beautifulsoup4==4.15.0",
+    "respx==0.22.0",
+    "PyYAML==6.0.1",
 ]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.setuptools.package-data]
+app = ["data/**/*.json", "static/**/*"]
 
 [tool.ruff]
 target-version = "py312"
@@ -63,12 +71,14 @@ module = [
     "google.*",
     "slowapi.*",
     "qrcode.*",
+    "respx.*",
 ]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 minversion = "8.0"
 addopts = "-ra -q --asyncio-mode=auto"
+pythonpath = ["."]
 testpaths = ["tests"]
 
 [tool.coverage.run]

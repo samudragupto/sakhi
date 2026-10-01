@@ -33,17 +33,26 @@ def _store_local_session(session: SessionDoc) -> None:
     _LOCAL_SESSIONS[session.session_id] = session
 
 
+_CACHED_FIRESTORE_CLIENT: Any = None
+
+
 def _get_firestore_client() -> Any | None:
     """Safely obtain Firestore client if configured and reachable."""
+    global _CACHED_FIRESTORE_CLIENT
+    if _CACHED_FIRESTORE_CLIENT is not None:
+        return _CACHED_FIRESTORE_CLIENT
+
     settings = get_settings()
-    if settings.app_env in ("development", "test"):
+    if settings.environment in ("development", "test") and not settings.google_cloud_project:
         return None
     try:
         from google.cloud import firestore
 
-        return firestore.Client(
-            project=settings.gcp_project_id, database=settings.firestore_database
+        _CACHED_FIRESTORE_CLIENT = firestore.Client(
+            project=settings.google_cloud_project or None,
+            database=settings.firestore_database,
         )
+        return _CACHED_FIRESTORE_CLIENT
     except Exception:
         logger.warning(
             "Firestore unavailable, falling back to in-memory store",
@@ -61,7 +70,7 @@ async def get_or_create_session(session_id: str) -> SessionDoc:
     db = _get_firestore_client()
     if db is not None:
         try:
-            doc_ref = db.collection("sessions").document(session_id)
+            doc_ref = db.collection(settings.firestore_collection).document(session_id)
             doc = await asyncio.to_thread(doc_ref.get, timeout=5.0)
             if doc.exists:
                 return SessionDoc(**doc.to_dict())
@@ -83,10 +92,11 @@ async def get_or_create_session(session_id: str) -> SessionDoc:
 
 async def update_session(session: SessionDoc) -> None:
     """Save updated session progress."""
+    settings = get_settings()
     db = _get_firestore_client()
     if db is not None:
         try:
-            doc_ref = db.collection("sessions").document(session.session_id)
+            doc_ref = db.collection(settings.firestore_collection).document(session.session_id)
             await asyncio.to_thread(doc_ref.set, session.model_dump(), timeout=5.0)
             return
         except Exception:
@@ -98,10 +108,11 @@ async def update_session(session: SessionDoc) -> None:
 async def delete_session(session_id: str) -> bool:
     """Instantly delete session data for shared phone privacy mode."""
     deleted = False
+    settings = get_settings()
     db = _get_firestore_client()
     if db is not None:
         try:
-            doc_ref = db.collection("sessions").document(session_id)
+            doc_ref = db.collection(settings.firestore_collection).document(session_id)
             await asyncio.to_thread(doc_ref.delete, timeout=5.0)
             deleted = True
         except Exception:

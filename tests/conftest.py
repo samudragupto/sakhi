@@ -8,6 +8,14 @@ from httpx import ASGITransport, AsyncClient
 from app.main import create_app
 
 
+@pytest.fixture(autouse=True)
+def _reset_gemini_client() -> None:  # type: ignore[misc]
+    """Reset cached Gemini client between tests for isolation."""
+    import app.services.gemini_service as gs
+
+    gs._CACHED_GENAI_CLIENT = None
+
+
 @pytest.fixture
 def anyio_backend() -> str:
     """Configure anyio backend for asyncio."""

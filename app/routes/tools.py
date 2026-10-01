@@ -27,7 +27,7 @@ async def get_nearby_anganwadis(
 @router.post("/card", response_model=OfficerCardData)
 async def create_officer_card(body: OfficerCardRequest) -> OfficerCardData:
     """Generate bilingual officer presentation card with official scheme QR code."""
-    return generate_officer_card(body)
+    return await generate_officer_card(body)
 
 
 @router.delete("/session")

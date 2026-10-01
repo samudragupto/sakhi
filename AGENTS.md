@@ -7,7 +7,8 @@ Every decision must improve one of these seven signals.
 
 ## Non-negotiable rules
 1. NEVER hardcode secrets, API keys, project IDs, or credentials. Use environment
-   variables loaded via pydantic-settings; in production they come from Secret Manager.
+   variables via pydantic-settings; in production secrets come from Google Secret
+   Manager mounted into Cloud Run. Commit only .env.example with placeholders.
 2. NEVER log personal data (names, phone numbers, Aadhaar, audio, images, free text).
    Log only event names, latency, status codes, and anonymous session IDs.
 3. Every Python function has type hints and a docstring. Max ~40 lines per function.
@@ -24,3 +25,10 @@ Every decision must improve one of these seven signals.
    phase. Fix all failures before moving on.
 10. Keep dependencies minimal and pinned. No heavy frontend frameworks.
 11. After finishing each phase, update README.md if behavior changed.
+12. The app is designed for Google Cloud Run (Docker) and local execution.
+    No code may depend on a writable filesystem, persistent memory, or
+    long-running background tasks.
+13. All file paths are built from Path(__file__).resolve(); never rely on the
+    current working directory or on site-packages.
+14. Importing app.main must never raise. Missing optional assets or missing
+    credentials degrade gracefully with a logged warning.

@@ -8,6 +8,7 @@ import qrcode
 
 from app.models.card import OfficerCardData, OfficerCardRequest
 from app.services.eligibility import load_scheme_data
+from app.services.translate_service import translate_text
 
 
 def _create_qr_code(official_url: str) -> str:
@@ -39,14 +40,15 @@ def _get_document_labels(
     return [item[0] for item in labels], [item[1] for item in labels]
 
 
-def generate_officer_card(req: OfficerCardRequest) -> OfficerCardData:
+async def generate_officer_card(req: OfficerCardRequest) -> OfficerCardData:
     """Generate bilingual card and official portal QR code base64."""
     scheme = load_scheme_data("pmmvy")
 
     official_url = scheme.get("where_to_apply", {}).get("online_portal", "https://pmmvy.wcd.gov.in")
 
     benefit_hi = f"₹{req.benefit_amount_inr:,} (मातृ वंदना सहायता)"
-    benefit_en = f"₹{req.benefit_amount_inr:,} (Maternity Benefit Assistance)"
+    translated_line = await translate_text("मातृ वंदना सहायता", target_language="en")
+    benefit_en = f"₹{req.benefit_amount_inr:,} ({translated_line if translated_line != 'मातृ वंदना सहायता' else 'Maternity Benefit Assistance'})"
     docs_hi, docs_en = _get_document_labels(scheme, req.required_documents)
 
     return OfficerCardData(

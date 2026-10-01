@@ -7,7 +7,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from app.core.config import load_secret_from_gcp
 from app.core.logging import RedactingJsonFormatter, setup_logging
 from app.core.security import sanitize_text
 from app.models.session import SessionDoc
@@ -70,52 +69,54 @@ async def test_speech_service_wav_and_ogg() -> None:
 @pytest.mark.asyncio
 async def test_chat_scripted_fallback_branches() -> None:
     """Test specific conversational branches in scripted fallback."""
-    session = SessionDoc(session_id="test-branches", step=1)
+    with patch("app.services.gemini_service.get_gemini_client", return_value=None):
+        session = SessionDoc(session_id="test-branches", step=1)
 
-    # User says "नहीं" at step 1
-    res1 = await process_chat("नहीं", session)
-    assert res1.ui_action == "SHOW_RESULT"
-    assert "स्तनपान" in res1.speech_text
+        # User says "नहीं" at step 1
+        res1 = await process_chat("नहीं", session)
+        assert res1.ui_action == "SHOW_RESULT"
+        assert "स्तनपान" in res1.speech_text
 
-    # User at step 2 asks for 2nd child
-    session2 = SessionDoc(session_id="test-child2", step=2)
-    res2 = await process_chat("दूसरी संतान", session2)
-    assert res2.ui_action == "ASK_YES_NO"
-    assert "बेटी" in res2.speech_text
+        # User at step 2 asks for 2nd child
+        session2 = SessionDoc(session_id="test-child2", step=2)
+        res2 = await process_chat("दूसरी संतान", session2)
+        assert res2.ui_action == "ASK_YES_NO"
+        assert "बेटी" in res2.speech_text
 
-    # User at step 3 says not a girl
-    session3 = SessionDoc(session_id="test-child2-boy", step=3)
-    res3 = await process_chat("नहीं, बेटा है", session3)
-    assert res3.ui_action == "SHOW_RESULT"
-    assert "कन्या" in res3.speech_text
+        # User at step 3 says not a girl
+        session3 = SessionDoc(session_id="test-child2-boy", step=3)
+        res3 = await process_chat("नहीं, बेटा है", session3)
+        assert res3.ui_action == "SHOW_RESULT"
+        assert "कन्या" in res3.speech_text
 
-    # User at step 4 selects e-shram
-    session4 = SessionDoc(session_id="test-eshram", step=4)
-    res4 = await process_chat("ई-श्रम", session4)
-    assert res4.ui_action == "ASK_YES_NO"
-    assert "सरकारी" in res4.speech_text
+        # User at step 4 selects e-shram
+        session4 = SessionDoc(session_id="test-eshram", step=4)
+        res4 = await process_chat("ई-श्रम", session4)
+        assert res4.ui_action == "ASK_YES_NO"
+        assert "सरकारी" in res4.speech_text
 
 
 @pytest.mark.asyncio
 async def test_chat_retries_and_positive_deterministic_branches() -> None:
     """Cover retry prompts, positive girl-child flow, and final rule outcomes."""
-    retry = await process_chat("अस्पष्ट", SessionDoc(session_id="retry", step=2))
-    assert retry.ui_action == "ASK_CHOICE"
+    with patch("app.services.gemini_service.get_gemini_client", return_value=None):
+        retry = await process_chat("अस्पष्ट", SessionDoc(session_id="retry", step=2))
+        assert retry.ui_action == "ASK_CHOICE"
 
-    girl_session = SessionDoc(session_id="girl", step=3)
-    category = await process_chat("हाँ, बेटी", girl_session)
-    assert category.ui_action == "ASK_CHOICE"
+        girl_session = SessionDoc(session_id="girl", step=3)
+        category = await process_chat("हाँ, बेटी", girl_session)
+        assert category.ui_action == "ASK_CHOICE"
 
-    eligible_session = SessionDoc(session_id="eligible", step=4)
-    await process_chat("मेरे पास कार्ड है", eligible_session)
-    eligible = await process_chat("नहीं", eligible_session)
-    assert eligible.data["eligible"] is True
-    assert eligible.data["benefit_amount_inr"] == 5000
+        eligible_session = SessionDoc(session_id="eligible", step=4)
+        await process_chat("मेरे पास कार्ड है", eligible_session)
+        eligible = await process_chat("नहीं", eligible_session)
+        assert eligible.data["eligible"] is True
+        assert eligible.data["benefit_amount_inr"] == 5000
 
-    excluded_session = SessionDoc(session_id="excluded", step=4)
-    await process_chat("none", excluded_session)
-    excluded = await process_chat("हाँ, सरकारी नौकरी", excluded_session)
-    assert excluded.data["reason_code"] == "INELIGIBLE_GOVT_EMPLOYEE"
+        excluded_session = SessionDoc(session_id="excluded", step=4)
+        await process_chat("none", excluded_session)
+        excluded = await process_chat("हाँ, सरकारी नौकरी", excluded_session)
+        assert excluded.data["reason_code"] == "INELIGIBLE_GOVT_EMPLOYEE"
 
 
 @pytest.mark.asyncio
@@ -140,13 +141,6 @@ def test_sanitize_text_edge_cases() -> None:
     assert sanitize_text("") == ""
     dirty = "Hello\x00\x08World\x1f!"
     assert sanitize_text(dirty) == "HelloWorld!"
-
-
-def test_secret_manager_loader_graceful_none() -> None:
-    """Test load_secret_from_gcp gracefully returns None when unavailable."""
-    with patch("google.cloud.secretmanager.SecretManagerServiceClient") as client_class:
-        client_class.side_effect = RuntimeError("unavailable")
-        assert load_secret_from_gcp("TEST_SECRET", "") is None
 
 
 def test_setup_logging_formatting() -> None:

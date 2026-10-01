@@ -1,6 +1,7 @@
 # Sakhi – आपकी आवाज़ दीदी (Sakhi – Your Voice Didi)
 
 [![CI](https://github.com/samudragupto/sakhi/actions/workflows/ci.yml/badge.svg)](https://github.com/samudragupto/sakhi/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/samudragupto/sakhi/actions/workflows/codeql.yml/badge.svg)](https://github.com/samudragupto/sakhi/actions/workflows/codeql.yml)
 [![Coverage](https://img.shields.io/badge/Coverage-92%25-brightgreen.svg)](pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python: 3.12](https://img.shields.io/badge/Python-3.12-blue.svg)](pyproject.toml)
@@ -130,7 +131,24 @@ pytest --cov=app --cov-branch --cov-report=term-missing
 
 ---
 
-## 7. Container & Firestore Setup
+## 7. CI/CD & Cloud Run Deployment
+
+The project uses a fully automated 5-stage GitHub Actions CI/CD pipeline targeting Google Cloud Run.
+
+```mermaid
+graph LR
+    Push[Push to main] --> Lint[Lint & Typecheck]
+    Lint --> Test[Pytest >=90% Cov]
+    Test --> Security[SAST & Dependency Audit]
+    Security --> Docker[Docker Build & Health]
+    Docker --> Deploy[Cloud Run Deploy]
+    
+    Deploy -.->|WIF Auth| GCP((Google Cloud))
+```
+
+**Status:** The CI pipeline is configured in `.github/workflows/ci.yml`. Deployment uses Workload Identity Federation for secure, keyless authentication.
+
+### Local Container Check
 
 ### 1. Build and Run via Docker
 ```bash

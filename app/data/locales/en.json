@@ -1,0 +1,17 @@
+{
+  "reasons": {
+    "eligible_first_child": "Congratulations! You are eligible for ₹5,000 maternity benefit for your first child.",
+    "eligible_second_child_girl": "Congratulations! You are eligible for ₹6,000 full maternity benefit as the second child is a girl.",
+    "ineligible_not_pregnant_lactating": "This scheme is only for pregnant women and lactating mothers.",
+    "ineligible_second_child_boy": "As per rules, second child benefit is available only when the second child is a girl.",
+    "ineligible_govt_employee": "Government or PSU employees are not eligible as they receive separate maternity leave benefits.",
+    "ineligible_no_category": "At least one qualifying category (e.g., ration card, E-Shram, MGNREGA, etc.) is required."
+  },
+  "document_help": {
+    "summary": "The photo could not be read right now. Please verify eligibility and benefits at the Anganwadi.",
+    "next_step": "Please take a clear photo and show it to the Anganwadi worker for assistance."
+  },
+  "translations": {
+    "matru_vandana_sahayata": "Maternity Benefit Assistance"
+  }
+}

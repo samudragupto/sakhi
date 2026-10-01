@@ -14,6 +14,37 @@ from app.services.eligibility import check_pmmvy_eligibility, load_locale_data
 DOCUMENT_PROMPT = """इस दस्तावेज़ में दिखाई देने वाली जानकारी का सरल हिंदी में सार दें।
 अस्पष्ट पाठ का अनुमान न लगाएँ। पात्रता या लाभ की राशि तय न करें।"""
 
+_CACHED_GENAI_CLIENT: Any = None
+
+
+def get_gemini_client() -> Any | None:
+    """Return configured google-genai Client using Vertex AI with ADC."""
+    global _CACHED_GENAI_CLIENT
+    if _CACHED_GENAI_CLIENT is not None:
+        return _CACHED_GENAI_CLIENT
+
+    settings = get_settings()
+    if not settings.google_cloud_project:
+        return None
+    try:
+        from google import genai
+        from google.genai import types
+
+        http_opts = types.HttpOptions(timeout=5000)
+        _CACHED_GENAI_CLIENT = genai.Client(
+            vertexai=True,
+            project=settings.google_cloud_project,
+            location=settings.google_cloud_location,
+            http_options=http_opts,
+        )
+        return _CACHED_GENAI_CLIENT
+    except Exception:
+        logger.warning(
+            "Could not initialize Gemini client, using scripted fallbacks",
+            extra={"event": "gemini_init_fallback"},
+        )
+        return None
+
 
 def _result_response(answers: EligibilityAnswers) -> ChatResponse:
     """Evaluate answers deterministically and create the corresponding chat response."""
@@ -197,8 +228,88 @@ def _run_scripted_fallback_flow(user_msg: str, session: SessionDoc) -> ChatRespo
     return _handle_step_five(user_msg, lower, session)
 
 
+async def _call_gemini_with_tools(
+    message: str, session: SessionDoc, client: Any
+) -> ChatResponse | None:
+    """Call Gemini with function calling for eligibility check with retry backoff."""
+    settings = get_settings()
+    from google.genai import types
+
+    sys_instruction = (
+        "आप 'सखी' हैं, ग्रामीण भारतीय महिलाओं के लिए मातृत्व वंदना योजना की सहायक दीदी। "
+        "सरल और आदरपूर्ण हिंदी बोलें। यदि उपयोगकर्ता अपनी स्थिति (गर्भवती, पहली/दूसरी संतान, "
+        "राशन कार्ड या अन्य श्रेणी, और सरकारी नौकरी) बताती है, तो पात्रता जांचने के लिए "
+        "केवल 'check_pmmvy_eligibility' टूल का प्रयोग करें। स्वयं कोई निर्णय न लें।"
+    )
+    safety_settings: Any = [
+        types.SafetySetting(
+            category=types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+            threshold=types.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+        ),
+        types.SafetySetting(
+            category=types.HarmCategory.HARM_CATEGORY_HARASSMENT,
+            threshold=types.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+        ),
+        types.SafetySetting(
+            category=types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+            threshold=types.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+        ),
+        types.SafetySetting(
+            category=types.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+            threshold=types.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+        ),
+    ]
+    config = types.GenerateContentConfig(
+        system_instruction=sys_instruction,
+        temperature=0.3,
+        max_output_tokens=300,
+        tools=[check_pmmvy_eligibility],
+        safety_settings=safety_settings,
+    )
+    for attempt in range(2):
+        try:
+            resp = await asyncio.to_thread(
+                client.models.generate_content,
+                model=settings.gemini_model,
+                contents=f"उपयोगकर्ता संदेश: {message}. सत्र डेटा: {session.answers}",
+                config=config,
+            )
+            # If function calling returned calls
+            if resp and resp.function_calls:
+                for fn_call in resp.function_calls:
+                    if fn_call.name == "check_pmmvy_eligibility":
+                        args = fn_call.args or {}
+                        answers = EligibilityAnswers(**args)
+                        return _result_response(answers)
+            if resp and resp.text and resp.text.strip():
+                return ChatResponse(
+                    speech_text=resp.text.strip(),
+                    caption=resp.text.strip(),
+                    ui_action=UIAction.NONE,
+                )
+        except Exception:
+            if attempt == 0:
+                await asyncio.sleep(0.5)
+                continue
+            logger.warning(
+                "Gemini chat function calling failed, falling back to script",
+                extra={"event": "gemini_chat_fallback"},
+            )
+    return None
+
+
 async def process_chat(message: str, session: SessionDoc) -> ChatResponse:
-    """Process chat with deterministic rules and scripted Hindi prompts only."""
+    """Process chat using Vertex AI Gemini function calling or scripted deterministic flow."""
+    client = get_gemini_client()
+    if client is not None:
+        try:
+            result = await _call_gemini_with_tools(message, session, client)
+            if result is not None:
+                return result
+        except Exception:
+            logger.warning(
+                "Error invoking Gemini tool calling", extra={"event": "gemini_tool_fallback"}
+            )
     return _run_scripted_fallback_flow(message, session)
 
 
@@ -213,25 +324,24 @@ def _document_fallback() -> DocumentExplainResponse:
 
 async def explain_document_image(image_bytes: bytes, content_type: str) -> DocumentExplainResponse:
     """Summarize a document image with Gemini or return generic Hindi guidance."""
-    settings = get_settings()
-    if not settings.gemini_api_key:
+    client = get_gemini_client()
+    if client is None:
         return _document_fallback()
 
+    settings = get_settings()
     try:
-        from google import genai
         from google.genai import types
 
-        client = genai.Client(
-            api_key=settings.gemini_api_key,
-            http_options=types.HttpOptions(timeout=5000),
-        )
         image_part = types.Part.from_bytes(data=image_bytes, mime_type=content_type)
         image_contents: Any = [DOCUMENT_PROMPT, image_part]
         response = await asyncio.to_thread(
             client.models.generate_content,
             model=settings.gemini_model,
             contents=image_contents,
-            config=types.GenerateContentConfig(temperature=0.1, max_output_tokens=300),
+            config=types.GenerateContentConfig(
+                temperature=0.1,
+                max_output_tokens=300,
+            ),
         )
         if response and response.text and response.text.strip():
             guidance = load_locale_data("hi").get("document_help", {})
