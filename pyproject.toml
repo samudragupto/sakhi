@@ -29,7 +29,7 @@ dev = [
     "ruff==0.16.9",
     "mypy==2.3.1",
     "beautifulsoup4==4.15.0",
-    "respx==0.22.0",
+    "respx==0.23.1",
     "PyYAML==6.0.1",
 ]
 
