@@ -1,0 +1,1 @@
+"""Sakhi core application package."""

@@ -1,0 +1,139 @@
+{
+  "scheme_id": "pmmvy",
+  "name_hi": "प्रधानमंत्री मातृ वंदना योजना",
+  "name_en": "Pradhan Mantri Matru Vandana Yojana",
+  "version": "2.0 (Mission Shakti)",
+  "source": "Ministry of Women and Child Development, Government of India",
+  "last_verified": "2026-01-15",
+  "disclaimer_hi": "यह जानकारी सरकारी नियमों पर आधारित है। अंतिम पुष्टि अपनी आंगनवाड़ी में करें।",
+  "disclaimer_en": "This information is based on official government guidelines. Please confirm final details at your local Anganwadi Centre.",
+  "benefits": {
+    "first_child": {
+      "total_amount_inr": 5000,
+      "installments": [
+        {
+          "installment_number": 1,
+          "amount_inr": 3000,
+          "condition_hi": "गर्भावस्था पंजीकरण और कम से कम एक प्रसव पूर्व जांच (ANC)",
+          "condition_en": "Pregnancy registration and at least one Antenatal Check-up (ANC)",
+          "condition_key": "installments.first_child.inst_1"
+        },
+        {
+          "installment_number": 2,
+          "amount_inr": 2000,
+          "condition_hi": "बच्चे के जन्म का पंजीकरण और टीकाकरण का पहला चक्र",
+          "condition_en": "Child birth registration and first cycle of vaccinations",
+          "condition_key": "installments.first_child.inst_2"
+        }
+      ]
+    },
+    "second_child_girl": {
+      "total_amount_inr": 6000,
+      "installments": [
+        {
+          "installment_number": 1,
+          "amount_inr": 6000,
+          "condition_hi": "दूसरी संतान केवल कन्या होने पर जन्म पंजीकरण और पूर्ण टीकाकरण",
+          "condition_en": "Second child ONLY if girl: birth registration and complete vaccination",
+          "condition_key": "installments.second_child_girl.inst_1"
+        }
+      ]
+    }
+  },
+  "eligible_categories": [
+    {
+      "code": "SC_ST",
+      "name_hi": "अनुसूचित जाति या अनुसूचित जनजाति (SC/ST)",
+      "name_en": "Scheduled Caste or Scheduled Tribe (SC/ST)"
+    },
+    {
+      "code": "DISABILITY_40_PLUS",
+      "name_hi": "40% या अधिक दिव्यांगता (दिव्यांग जन)",
+      "name_en": "Partially or fully disabled women (40%+ disability)"
+    },
+    {
+      "code": "BPL_RATION_CARD",
+      "name_hi": "बीपीएल / अंत्योदय / एनएफएसए राशन कार्ड",
+      "name_en": "BPL / Antyodaya / NFSA Ration Card holder"
+    },
+    {
+      "code": "AYUSHMAN_PMJAY",
+      "name_hi": "आयुष्मान भारत (PM-JAY) कार्ड धारक",
+      "name_en": "Ayushman Bharat (PM-JAY) beneficiary"
+    },
+    {
+      "code": "E_SHRAM",
+      "name_hi": "ई-श्रम कार्ड धारक",
+      "name_en": "e-Shram card holder"
+    },
+    {
+      "code": "PM_KISAN",
+      "name_hi": "किसान सम्मान निधि (PM-KISAN) लाभार्थी",
+      "name_en": "Kisan Samman Nidhi (PM-KISAN) beneficiary"
+    },
+    {
+      "code": "MGNREGA",
+      "name_hi": "मनरेगा जॉब कार्ड धारक",
+      "name_en": "MGNREGA Job Card holder"
+    },
+    {
+      "code": "INCOME_BELOW_8_LAKH",
+      "name_hi": "पारिवारिक वार्षिक आय ₹8 लाख से कम",
+      "name_en": "Annual family income less than ₹8 Lakh"
+    },
+    {
+      "code": "AWW_AWH_ASHA",
+      "name_hi": "आंगनवाड़ी कार्यकर्ता, सहायिका या आशा दीदी",
+      "name_en": "Anganwadi Worker (AWW), Helper (AWH), or ASHA worker"
+    }
+  ],
+  "exclusions": [
+    {
+      "code": "GOVT_PSU_EMPLOYEE",
+      "name_hi": "केंद्र या राज्य सरकार या पीएसयू में नियमित सरकारी नौकरी",
+      "name_en": "Regular employment with Central or State Government or PSUs"
+    }
+  ],
+  "required_documents": [
+    {
+      "id": "aadhaar_mother",
+      "name_hi": "माँ का आधार कार्ड",
+      "name_en": "Mother's Aadhaar Card",
+      "description_hi": "पहचान और आधार सत्यापन हेतु",
+      "required_always": true
+    },
+    {
+      "id": "bank_account",
+      "name_hi": "आधार से जुड़ा बैंक या डाकघर खाता",
+      "name_en": "Aadhaar-linked Bank or Post Office Account",
+      "description_hi": "डीबीटी (DBT) के सीधे पैसे पाने हेतु",
+      "required_always": true
+    },
+    {
+      "id": "mcp_card",
+      "name_hi": "मातृ एवं शिशु सुरक्षा (MCP) कार्ड",
+      "name_en": "Mother and Child Protection (MCP) Card",
+      "description_hi": "टीकाकरण और प्रसव पूर्व जांच रिकॉर्ड",
+      "required_always": true
+    },
+    {
+      "id": "category_proof",
+      "name_hi": "श्रेणी या पात्रता प्रमाण पत्र",
+      "name_en": "Eligibility Category Proof (Ration Card, e-Shram, etc.)",
+      "description_hi": "राशन कार्ड, ई-श्रम या अन्य चयनित कार्ड",
+      "required_always": true
+    },
+    {
+      "id": "birth_certificate",
+      "name_hi": "बच्चे का जन्म प्रमाण पत्र",
+      "name_en": "Child Birth Certificate",
+      "description_hi": "दूसरी किस्त या दूसरी बच्ची की किस्त हेतु",
+      "required_always": false
+    }
+  ],
+  "where_to_apply": {
+    "offline_hi": "निकटतम आंगनवाड़ी केंद्र या आशा दीदी",
+    "offline_en": "Nearest Anganwadi Centre or ASHA worker",
+    "online_portal": "https://pmmvy.wcd.gov.in"
+  }
+}

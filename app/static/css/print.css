@@ -1,0 +1,26 @@
+/* Print and High Brightness Officer Card Stylesheet */
+
+@media print {
+  body {
+    background: #fff;
+    color: #000;
+  }
+
+  header, .mic-wrapper, .btn-hide, .btn-wipe, .progress-dots {
+    display: none !important;
+  }
+
+  .officer-card {
+    border: 2px solid #000;
+    box-shadow: none;
+    page-break-inside: avoid;
+    width: 100%;
+    margin: 0;
+    padding: 15px;
+  }
+
+  .officer-card-qr img {
+    width: 140px;
+    height: 140px;
+  }
+}

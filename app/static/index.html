@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title data-i18n="ui.document_title"></title>
+  <meta name="description" content="ग्रामीण महिलाओं के लिए मातृत्व वंदना योजना (PMMVY) सहायता।">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/print.css" media="print">
+</head>
+<body>
+  <!-- Accessibility Keyboard Skip Link -->
+  <a href="#main-content" class="skip-link">मुख्य सामग्री पर जाएँ</a>
+
+  <!-- Header & Privacy Navigation -->
+  <header>
+    <div class="brand">
+      <h1 data-i18n="app.title"></h1>
+      <span data-i18n="app.subtitle"></span>
+    </div>
+    <div class="header-actions">
+      <button id="btn-hide" class="btn-hide" type="button" data-i18n-aria-label="ui.hide_aria">
+        <span aria-hidden="true">🔒</span><span data-i18n="app.hide"></span>
+      </button>
+      <button id="btn-wipe" class="btn-wipe" type="button" data-i18n-aria-label="ui.wipe_aria">
+        <span aria-hidden="true">🗑️</span><span data-i18n="app.delete_all"></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Neutral Panic Recipe Screen (Swapped instantly when 'छुपाएँ' or Escape is pressed) -->
+  <aside id="screen-recipe" class="recipe-screen" hidden aria-live="polite">
+    <h2 data-i18n="privacy.recipe_title"></h2>
+    <div id="recipe-steps"></div>
+  </aside>
+
+  <!-- Primary Application Viewport -->
+  <main id="main-content" tabindex="-1">
+    <div id="app-viewport">
+      <!-- 5-Step Visual Progress Dots -->
+      <div class="progress-dots" data-i18n-aria-label="ui.progress_aria" role="progressbar" aria-valuenow="1" aria-valuemin="1" aria-valuemax="5">
+        <div class="dot active" data-step="1"></div>
+        <div class="dot" data-step="2"></div>
+        <div class="dot" data-step="3"></div>
+        <div class="dot" data-step="4"></div>
+        <div class="dot" data-step="5"></div>
+      </div>
+
+      <!-- Live Captions Announcement -->
+      <div id="live-caption" class="caption-box" aria-live="polite"></div>
+
+      <!-- Initial One-Tap Start Action (Respects Browser Audio Autoplay) -->
+      <button id="btn-start-app" class="btn-decision btn-yes btn-start-app" type="button">
+        <span data-i18n="app.start_button"></span><span aria-hidden="true">🎤</span>
+      </button>
+
+      <!-- Giant 130px Pulsing Microphone Action -->
+      <div class="mic-wrapper">
+        <button id="btn-mic" class="btn-mic" type="button" data-i18n-aria-label="ui.mic_aria">
+          <span class="mic-icon" aria-hidden="true">🎙️</span>
+          <span class="mic-label" data-i18n="ui.mic_label"></span>
+        </button>
+      </div>
+
+      <form id="chat-form" class="chat-form">
+        <label for="chat-message" data-i18n="ui.text_input_label"></label>
+        <div class="chat-input-row">
+          <input id="chat-message" name="message" type="text" maxlength="500" autocomplete="off" data-i18n-placeholder="ui.text_input_placeholder">
+          <button class="btn-decision btn-yes chat-send" type="submit" data-i18n="ui.send_message"></button>
+        </div>
+      </form>
+
+      <!-- Decision & Choices Grid -->
+      <div id="quick-replies-container" role="group" data-i18n-aria-label="ui.replies_aria"></div>
+
+      <!-- Result Screen -->
+      <section id="screen-result" class="screen-result" hidden aria-live="assertive"></section>
+    </div>
+  </main>
+
+  <!-- Bilingual Officer Card Modal -->
+  <div id="officer-card-modal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="card-title-hi">
+    <div class="officer-card">
+      <h2 id="card-title-hi" data-i18n="app.title"></h2>
+      <h3 id="card-title-en" class="officer-card-subtitle" data-i18n="ui.officer_title_en"></h3>
+      
+      <div class="card-benefit">
+        <strong id="card-benefit-hi"></strong><br>
+        <span id="card-benefit-en"></span>
+      </div>
+
+      <h4 data-i18n="ui.documents_title"></h4>
+      <ul id="card-docs-list" class="card-docs-list"></ul>
+
+      <div class="officer-card-qr">
+        <img id="card-qr-img" src="" data-i18n-alt="ui.qr_alt">
+      </div>
+      <p id="card-disclaimer" class="card-disclaimer"></p>
+
+      <div class="modal-actions">
+        <button id="btn-print-card" class="btn-decision btn-yes modal-action" type="button"><span data-i18n="ui.print_card"></span> <span aria-hidden="true">🖨️</span></button>
+        <button class="btn-decision btn-no btn-modal-close modal-action" type="button"><span data-i18n="ui.close"></span> <span aria-hidden="true">✖</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nearby Places Modal -->
+  <div id="places-modal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="places-title">
+    <div class="places-dialog">
+      <h2 id="places-title" data-i18n="ui.places_title"></h2>
+      <div id="places-list" class="places-list"></div>
+      <button class="btn-decision btn-no btn-modal-close places-close" type="button" data-i18n="ui.close"></button>
+    </div>
+  </div>
+
+  <!-- JavaScript ES Module Entrypoint -->
+  <script type="module" src="/static/js/app.js"></script>
+</body>
+</html>
