@@ -1,6 +1,6 @@
 # Runtime dependencies - must stay in sync with pyproject.toml [project.dependencies]
 # Verified by tests/test_repo_config.py
-fastapi==0.142.2
+fastapi==0.142.4
 uvicorn[standard]==0.54.0
 pydantic==2.13.5
 pydantic-settings==2.15.0
